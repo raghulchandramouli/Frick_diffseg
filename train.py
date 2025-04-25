@@ -7,6 +7,7 @@ from config import Config
 import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
+from losses import DiceLoss, BCEDiceLoss
 
 def main():
     cfg = Config()
@@ -28,6 +29,10 @@ def main():
     # Loss and optimizer
     if cfg['loss'] == 'bce':
         criterion = nn.BCEWithLogitsLoss()
+    elif cfg['loss'] == 'dice':
+        criterion = DiceLoss()
+    elif cfg['loss'] == 'bce_dice':
+        criterion = BCEDiceLoss()
     else:
         raise ValueError(f"Unknown loss: {cfg['loss']}")
     if cfg['optimizer'] == 'adam':
