@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from torchmetrics import JaccardIndex
 import time
+from LR_finder import LRFinder
+import torch.optim as optim
 
 def visualize_sample(model, dataset, device, idx=0):
     image, gt_mask = dataset[idx]
@@ -32,10 +34,33 @@ def visualize_sample(model, dataset, device, idx=0):
     plt.axis("off")
     plt.show()
 
-def train_and_validate(model, train_loader, val_loader, num_epochs, device, optimizer, criterion, scheduler, early_stopping=None):
+def train_and_validate(model, train_loader, val_loader, num_epochs, device, criterion, scheduler_type=None, early_stopping=None):
     train_iou_metric = JaccardIndex(task="binary", num_classes=2).to(device)
     val_iou_metric = JaccardIndex(task="binary", num_classes=2).to(device)
     history = {'train_loss': [], 'val_loss': [], 'train_iou': [], 'val_iou': []}
+
+    # Find optimal learning rate
+    print("Finding optimal learning rate...")
+    init_optimizer = optim.Adam(model.parameters(), lr=1e-7)
+    lr_finder = LRFinder(model=model, optimizer=init_optimizer, criterion=criterion, device=device)
+    lr_finder.range_test(train_loader, end_lr=10, num_iter=100, step_mode='exp')
+    best_lr = lr_finder.history['lr'][lr_finder.history['loss'].index(lr_finder.best_loss)]
+    lr_finder.plot(skip_start=10, skip_end=5)
+    plt.savefig('lr_find_results.png')
+    plt.close()
+    lr_finder.reset()
+    print(f"Optimal learning rate found: {best_lr:.2e}")
+
+    # Initialize optimizer with found learning rate
+    optimizer = optim.Adam(model.parameters(), lr=best_lr)
+
+    # Setup scheduler
+    if scheduler_type == 'ReduceLROnPlateau':
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=3, verbose=True)
+    elif scheduler_type == 'CosineAnnealingLR':
+        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10)
+    else:
+        scheduler = None
 
     print(f"Starting training for {num_epochs} epochs on {device}")
 
@@ -87,7 +112,12 @@ def train_and_validate(model, train_loader, val_loader, num_epochs, device, opti
         elapsed = time.time() - start_time
         print(f"Epoch {epoch+1}/{num_epochs} - Time: {elapsed:.2f}s - Train Loss: {epoch_loss:.4f} - Train IoU: {train_iou_score:.4f} - Val Loss: {val_loss_avg:.4f} - Val IoU: {val_iou_score:.4f}")
 
-        scheduler.step(val_loss_avg)
+        if scheduler is not None:
+            if isinstance(scheduler, optim.lr_scheduler.ReduceLROnPlateau):
+                scheduler.step(val_loss_avg)
+            else:
+                scheduler.step()
+
         if early_stopping is not None:
             stop, improved = early_stopping.step(val_iou_score, model)
             if improved:
