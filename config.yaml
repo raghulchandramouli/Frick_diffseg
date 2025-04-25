@@ -11,8 +11,8 @@ num_workers: 2
 pin_memory: true
 
 # Image/Mask size
-resize_height: 256
-resize_width: 256
+resize_height: 512
+resize_width: 512
 
 # Validation split
 val_split: 0.2
