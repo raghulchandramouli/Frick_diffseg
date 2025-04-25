@@ -36,14 +36,16 @@ class DataLoaderIter(object):
         return self.data_loader.dataset
 
     def inputs_labels_from_batch(self, batch_data):
-        if not isinstance(batch_data, dict) :
+        if isinstance(batch_data, list):
+            inputs = batch_data[0]
+            labels = batch_data[1]
+        elif isinstance(batch_data, dict):
+            inputs = batch_data["x"]
+            labels = batch_data["y"]
+        else:
             raise ValueError(
-                "Your batch type is not supported: {}. Please inherit from "
-                "`TrainDataLoaderIter` or `ValDataLoaderIter` and override the "
-                "`inputs_labels_from_batch` method.".format(type(batch_data))
+                "Your batch type is not supported: {}. Please use list or dict format".format(type(batch_data))
             )
-        inputs= batch_data["x"]
-        labels = batch_data["y"]
 
         return inputs, labels
 

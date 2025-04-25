@@ -20,11 +20,10 @@ class InpaintingDataset(Dataset):
     def __getitem__(self, idx):
         image_name = self.images[idx]
         image_path = os.path.join(self.images_dir, image_name)
-        if "_inpainted" in image_name:
-            base_name = image_name.replace("_inpainted", "")
-        else:
-            base_name = image_name
-        mask_name = base_name.replace(".jpg", "_mask.png")
+        base = os.path.splitext(image_name)[0]
+        if 'inpainted_' in base:
+            base = base.replace('inpainted_', '')
+        mask_name = f"mask_{base}.png"
         mask_path = os.path.join(self.masks_dir, mask_name)
         image = np.array(Image.open(image_path).convert("RGB"))
         mask = np.array(Image.open(mask_path).convert("L"))
@@ -47,8 +46,8 @@ def get_transforms():
         A.HorizontalFlip(p=0.7),
         A.VerticalFlip(p=0.7),
         A.RandomRotate90(p=0.8),
-        A.ShiftScaleRotate(shift_limit=0.1, scale_limit=0.2, rotate_limit=60, p=0.6),
-        A.ElasticTransform(p=0.4, alpha=120, sigma=120 * 0.05, alpha_affine=120 * 0.03),
+        A.Affine(translate_percent=0.1, scale=[0.9, 1.1], rotate=(-60, 60), p=0.6),
+        A.ElasticTransform(p=0.4, alpha=120, sigma=120 * 0.05),
         A.GridDistortion(p=0.4),
         A.RandomBrightnessContrast(brightness_limit=0.3, contrast_limit=0.3, p=0.8),
         A.HueSaturationValue(p=0.4),
