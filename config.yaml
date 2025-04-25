@@ -1,0 +1,37 @@
+# DiffSeg UNet Project Configuration
+# Edit these values to control training and inference without code changes
+
+# Dataset paths
+inpainted_zip_path: "./inpainted_8k_dataset.zip"
+masks_zip_path: "./masks_8k_dataset.zip"
+inpainted_dir: "./inpainted_images"
+masks_dir: "./masks"
+
+# DataLoader
+batch_size: 16
+num_workers: 2
+pin_memory: true
+
+# Image/Mask size
+resize_height: 512
+resize_width: 512
+
+# Validation split
+val_split: 0.2
+
+# Model
+model:
+  name: "unet"
+  pretrained: true
+
+# Training
+epochs: 50
+learning_rate: 0.001
+optimizer: "adam"
+loss: "bce"
+
+# Inference
+inference_output_dir: "./outputs"
+
+# Device
+use_cuda: true
