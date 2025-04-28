@@ -136,6 +136,9 @@ def initialize_optimizer_with_lr(model, lr, cfg):
             raise ValueError(f"Unknown lr_scheduler: {cfg['lr_scheduler']}")
 
     return optimizer, scheduler
+
+
+def main():
     
     # Training loop
     for epoch in range(cfg['epochs']):
