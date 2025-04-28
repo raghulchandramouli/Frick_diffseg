@@ -160,6 +160,8 @@ def initialize_optimizer_with_lr(model, lr, cfg):
     """Initialize optimizer and scheduler with specified learning rate"""
     if cfg['optimizer'] == 'adam':
         optimizer = optim.Adam(model.parameters(), lr=lr)
+    elif cfg['optimizer'] == 'adamW':
+        optimizer = optim.AdamW(model.parameters(), lr=lr)
     else:
         raise ValueError(f"Unknown optimizer: {cfg['optimizer']}")
 
@@ -190,49 +192,6 @@ def initialize_optimizer_with_lr(model, lr, cfg):
 
     return optimizer, scheduler
 
-
-def main():
-    
-    # Training loop
-    for epoch in range(cfg['epochs']):
-        model.train()
-        train_loss = 0.0
-        for images, masks in tqdm(train_loader, desc=f"Epoch {epoch+1}/{cfg['epochs']}"):
-            images, masks = images.to(device), masks.to(device)
-            optimizer.zero_grad()
-            outputs = model(images)
-            outputs = outputs.squeeze(1)
-            loss = criterion(outputs, masks)
-            loss.backward()
-            optimizer.step()
-            train_loss += loss.item() * images.size(0)
-        
-        train_loss /= len(train_loader.dataset)
-        print(f"Epoch {epoch+1}, Train Loss: {train_loss:.4f}")
-        
-        # Validation
-        model.eval()
-        val_loss = 0.0
-        with torch.no_grad():
-            for images, masks in val_loader:
-                images, masks = images.to(device), masks.to(device)
-                outputs = model(images)
-                outputs = outputs.squeeze(1)
-                loss = criterion(outputs, masks)
-                val_loss += loss.item() * images.size(0)
-        
-        val_loss /= len(val_loader.dataset)
-        print(f"Epoch {epoch+1}, Val Loss: {val_loss:.4f}")
-        
-        # Step scheduler if present
-        if scheduler:
-            if cfg['lr_scheduler'] == 'ReduceLROnPlateau':
-                scheduler.step(val_loss)
-            else:
-                scheduler.step()
-        
-        # Save checkpoint
-        torch.save(model.state_dict(), f"model_epoch_{epoch+1}.pth")
 
 if __name__ == "__main__":
     main()

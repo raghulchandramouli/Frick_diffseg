@@ -24,7 +24,6 @@ model:
 
 # Training
 epochs: 10
-learning_rate: 1e-4
 optimizer: "adamW"
 loss: "bce_dice"
 

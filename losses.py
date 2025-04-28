@@ -10,8 +10,15 @@ class DiceLoss(nn.Module):
     def forward(self, logits, targets):
         probs = torch.sigmoid(logits)
         targets = targets.float()
-        intersection = (probs * targets).sum(dim=(1,2,3))
-        union = probs.sum(dim=(1,2,3)) + targets.sum(dim=(1,2,3))
+        # Dynamically determine dimensions to sum over
+        if probs.dim() == 4:
+            dims = (1,2,3)
+        elif probs.dim() == 3:
+            dims = (1,2)
+        else:
+            raise ValueError(f"Unexpected tensor shape for Dice loss: {probs.shape}")
+        intersection = (probs * targets).sum(dim=dims)
+        union = probs.sum(dim=dims) + targets.sum(dim=dims)
         dice = (2. * intersection + self.smooth) / (union + self.smooth)
         loss = 1 - dice
         return loss.mean()
