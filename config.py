@@ -8,5 +8,8 @@ class Config:
     def __getitem__(self, key):
         return self.cfg[key]
 
+    def __contains__(self, key):
+        return key in self.cfg
+
     def get(self, key, default=None):
         return self.cfg.get(key, default)

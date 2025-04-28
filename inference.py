@@ -6,6 +6,9 @@ from config import Config
 from torch.utils.data import DataLoader
 from PIL import Image
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 def save_mask(mask_tensor, save_path):
     mask = mask_tensor.squeeze().cpu().numpy()

@@ -9,6 +9,8 @@ import torch.optim as optim
 from tqdm import tqdm
 from losses import DiceLoss, BCEDiceLoss
 from LR_finder import LRFinder
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 def find_optimal_lr(model, train_loader, criterion, device):
@@ -44,14 +46,14 @@ def find_optimal_lr(model, train_loader, criterion, device):
     
     # Reset the model and optimizer to their initial states
     lr_finder.reset()
-    
+    model.train()
     return best_lr
 
 def main():
     cfg = Config()
     device = torch.device('cuda' if cfg['use_cuda'] and torch.cuda.is_available() else 'cpu')
     
-    # Prepare dataset
+    # Prepare datasett
     transform = get_transforms()
     dataset = InpaintingDataset(cfg['inpainted_dir'], cfg['masks_dir'], cfg['resize_height'], cfg['resize_width'], transform=transform)
     
@@ -98,13 +100,16 @@ def main():
     best_lr = find_optimal_lr(model, train_loader, criterion, device)
     print(f"Optimal learning rate found: {best_lr:.2e}")
     
-    # Initialize optimizer with found learning rate
+    # Initialize optimizer and scheduler with found learning rate
+    optimizer, scheduler = initialize_optimizer_with_lr(model, best_lr, cfg)
+
+def initialize_optimizer_with_lr(model, lr, cfg):
+    """Initialize optimizer and scheduler with specified learning rate"""
     if cfg['optimizer'] == 'adam':
-        optimizer = optim.Adam(model.parameters(), lr=best_lr)
+        optimizer = optim.Adam(model.parameters(), lr=lr)
     else:
         raise ValueError(f"Unknown optimizer: {cfg['optimizer']}")
-    
-    # Learning rate scheduler
+
     scheduler = None
     if 'lr_scheduler' in cfg:
         if cfg['lr_scheduler'] == 'StepLR':
@@ -129,6 +134,8 @@ def main():
             )
         else:
             raise ValueError(f"Unknown lr_scheduler: {cfg['lr_scheduler']}")
+
+    return optimizer, scheduler
     
     # Training loop
     for epoch in range(cfg['epochs']):

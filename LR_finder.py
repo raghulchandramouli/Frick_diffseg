@@ -4,6 +4,8 @@ import torch
 import numpy as np
 from tqdm.autonotebook import tqdm
 from torch.optim.lr_scheduler import _LRScheduler
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 
