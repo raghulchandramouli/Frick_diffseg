@@ -10,6 +10,7 @@ from tqdm import tqdm
 from losses import DiceLoss, BCEDiceLoss
 from LR_finder import LRFinder
 import matplotlib
+matplotlib.use('Agg')
 # Enable interactive mode for real-time plotting
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
