@@ -113,6 +113,8 @@ def main():
     for epoch in range(cfg['epochs']):
         model.train()
         train_loss = 0.0
+        train_inter = 0.0
+        train_union = 0.0
         for images, masks in tqdm(train_loader, desc=f"Epoch {epoch+1}/{cfg['epochs']}"):
             images, masks = images.to(device), masks.to(device)
             optimizer.zero_grad()
@@ -122,11 +124,19 @@ def main():
             loss.backward()
             optimizer.step()
             train_loss += loss.item() * images.size(0)
+            preds = (torch.sigmoid(outputs) > 0.5).float()
+            inter = (preds * masks).sum(dim=(1,2,3))
+            union = ((preds + masks) > 0).float().sum(dim=(1,2,3))
+            train_inter += inter.sum().item()
+            train_union += union.sum().item()
         train_loss /= len(train_loader.dataset)
-        print(f"Epoch {epoch+1}, Train Loss: {train_loss:.4f}")
+        train_iou = train_inter / (train_union + 1e-7)
+        print(f"Epoch {epoch+1}, Train Loss: {train_loss:.4f}, Train IoU: {train_iou:.4f}")
         # Validation
         model.eval()
         val_loss = 0.0
+        val_inter = 0.0
+        val_union = 0.0
         with torch.no_grad():
             for images, masks in val_loader:
                 images, masks = images.to(device), masks.to(device)
@@ -134,8 +144,14 @@ def main():
                 outputs = outputs.squeeze(1)
                 loss = criterion(outputs, masks)
                 val_loss += loss.item() * images.size(0)
+                preds = (torch.sigmoid(outputs) > 0.5).float()
+                inter = (preds * masks).sum(dim=(1,2,3))
+                union = ((preds + masks) > 0).float().sum(dim=(1,2,3))
+                val_inter += inter.sum().item()
+                val_union += union.sum().item()
         val_loss /= len(val_loader.dataset)
-        print(f"Epoch {epoch+1}, Val Loss: {val_loss:.4f}")
+        val_iou = val_inter / (val_union + 1e-7)
+        print(f"Epoch {epoch+1}, Val Loss: {val_loss:.4f}, Val IoU: {val_iou:.4f}")
         # Step scheduler if present
         if scheduler:
             if cfg['lr_scheduler'] == 'ReduceLROnPlateau':
