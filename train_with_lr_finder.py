@@ -125,8 +125,15 @@ def main():
             optimizer.step()
             train_loss += loss.item() * images.size(0)
             preds = (torch.sigmoid(outputs) > 0.5).float()
-            inter = (preds * masks).sum(dim=(1,2,3))
-            union = ((preds + masks) > 0).float().sum(dim=(1,2,3))
+            # Dynamically determine dimensions for summing
+            if preds.dim() == 4:
+                inter = (preds * masks).sum(dim=(1,2,3))
+                union = ((preds + masks) > 0).float().sum(dim=(1,2,3))
+            elif preds.dim() == 3:
+                inter = (preds * masks).sum(dim=(1,2))
+                union = ((preds + masks) > 0).float().sum(dim=(1,2))
+            else:
+                raise ValueError(f"Unexpected tensor shape for preds: {preds.shape}")
             train_inter += inter.sum().item()
             train_union += union.sum().item()
         train_loss /= len(train_loader.dataset)
@@ -145,8 +152,15 @@ def main():
                 loss = criterion(outputs, masks)
                 val_loss += loss.item() * images.size(0)
                 preds = (torch.sigmoid(outputs) > 0.5).float()
-                inter = (preds * masks).sum(dim=(1,2,3))
-                union = ((preds + masks) > 0).float().sum(dim=(1,2,3))
+                # Dynamically determine dimensions for summing
+                if preds.dim() == 4:
+                    inter = (preds * masks).sum(dim=(1,2,3))
+                    union = ((preds + masks) > 0).float().sum(dim=(1,2,3))
+                elif preds.dim() == 3:
+                    inter = (preds * masks).sum(dim=(1,2))
+                    union = ((preds + masks) > 0).float().sum(dim=(1,2))
+                else:
+                    raise ValueError(f"Unexpected tensor shape for preds: {preds.shape}")
                 val_inter += inter.sum().item()
                 val_union += union.sum().item()
         val_loss /= len(val_loader.dataset)
